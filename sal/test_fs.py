@@ -392,7 +392,7 @@ class FS(BaseTest):
         **Test scenario**
         #. Create a tree with many sub directories, files and symlinks.
         #. Copy this tree to another directory.
-        #. Change the content of some files in the destination directory.
+        #. Change the content of some files in the original directory.
         #. Copy the tree to the same destination directory with overwriteFiles=False.
         #. Check the changed files, should be the same.
         #. Copy the tree to the same destination directory with overwriteFiles=True.
@@ -407,7 +407,7 @@ class FS(BaseTest):
         dir_path = os.path.join(self.temp_path, dir_name)
         j.sal.fs.copyDirTree(base_dir, dir_path, keepsymlinks=True)
 
-        self.info("Change the content of some files in the destination directory.")
+        self.info("Change the content of some files in the original directory.")
         content = self.random_string()
         files = [os.path.join(base_dir, x) for x in os.listdir(base_dir) if ".txt" in x]
         for path in files:
@@ -448,7 +448,7 @@ class FS(BaseTest):
         self.info("Check that this directory is not copied.")
         ignored_path = os.path.join(dir_path, ignored_dir)
         dest_dirs = [
-            os.path.join(dir_path, x) for x in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, x))
+            os.path.join(dir_path, x) for x in os.listdir(dir_path) if os.path.isdir(os.path.join(dir_path, x))
         ]
         self.assertNotIn(ignored_dir, dest_dirs)
 
@@ -895,7 +895,7 @@ class FS(BaseTest):
         self.info("Create a file (F1) with upper and lower cases in its name.")
         file_name = "TEST_file"
         file_path = os.path.join(base_dir, file_name)
-        j.sal.fs.createEmptyFile(file_path)
+        j.sal.fs.touch(file_path)
 
         self.info(
             f"List the parent directory of this tree with case_sensitive={filter_case} and exclude=[F1] (F1 should be case {file_case})."
