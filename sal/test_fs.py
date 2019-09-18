@@ -9,6 +9,7 @@ from pwd import getpwuid
 from Jumpscale import j
 from parameterized import parameterized
 from checksumdir import dirhash
+import pickle
 
 from .base_test import BaseTest
 
@@ -341,7 +342,7 @@ class FS(BaseTest):
         Test case for copying tree with deleting the destination before copying.
 
         **Test scenario**
-        #. Create two tree with many sub directories, files and symlinks.
+        #. Create a tree with many sub directories, files and symlinks.
         #. Copy this tree to another directory.
         #. Change the content of some files in the destination directory.
         #. Copy this tree with deletefirst=False and destination must be the copied tree.
@@ -349,9 +350,7 @@ class FS(BaseTest):
         #. Copy this tree with deletefirst=True and destination must be the copied tree.
         #. Compare the copied tree with original one, should be the same.
         """
-        if delete_first:
-            self.skipTest("https://github.com/threefoldtech/jumpscaleX_core/issues/74")
-        self.info("Create two tree with many sub directories, files and symlinks.")
+        self.info("Create a tree with many sub directories, files and symlinks.")
         base_dir = self.create_tree()
 
         self.info("Copy this tree to another directory.")
@@ -361,7 +360,7 @@ class FS(BaseTest):
 
         self.info("Change the content of some files in the destination directory.")
         content = self.random_string()
-        files = [os.path.join(base_dir, x) for x in os.listdir(base_dir) if ".txt" in x]
+        files = [x for x in self.list_files_dirs_in_dir(base_dir) if ".md" in x]
         for path in files:
             j.sal.fs.writeFile(path, content)
 
@@ -516,7 +515,6 @@ class FS(BaseTest):
         j.sal.fs.copyDirTree(base_dir, dir_path, keepsymlinks=True, recursive=recursive)
 
         self.info("Check that all sub directories.")
-
         if recursive:
             origial_md5 = self.md5sum(base_dir)
             copied_md5 = self.md5sum(dir_path)
@@ -686,10 +684,10 @@ class FS(BaseTest):
         **Test scenario**
         #. Create a tree with many sub directories and files.
         #. Modify a file and take timestamp of now (T1).
-        #. List the parent directory of this tree with minmtime=T1 + 10, should not find the modified file.
-        #. List the parent directory of this tree with minmtime=T1 - 10, should find the modified file.
-        #. List the parent directory of this tree with maxmtime=T1 + 10, should find the modified file.
-        #. List the parent directory of this tree with maxmtime=T1 - 10, should not find the modified file.
+        #. List the parent directory of this tree with minmtime=T1 + 2, should not find the modified file.
+        #. List the parent directory of this tree with minmtime=T1 - 2, should find the modified file.
+        #. List the parent directory of this tree with maxmtime=T1 + 2, should find the modified file.
+        #. List the parent directory of this tree with maxmtime=T1 - 2, should not find the modified file.
         """
         self.info("Create a tree with many sub directories and files.")
         base_dir = self.create_tree()
@@ -697,35 +695,43 @@ class FS(BaseTest):
         self.info("Modify a file and take timestamp of now (T1).")
         list_dirs_files = os.listdir(base_dir)
         file = [file for file in list_dirs_files if os.path.isfile(os.path.join(base_dir, file))][0]
-        file_path = os.path.join(base_dir, file)
+        dir_name = self.random_string()
+        dir_path = os.path.join(base_dir, dir_name)
+        file_path = os.path.join(dir_path, file)
         content = self.random_string()
         time.sleep(4)
+        j.sal.fs.createDir(dir_path)
         j.sal.fs.writeFile(file_path, content)
+
         now = datetime.now().timestamp()
 
         self.info("List the parent directory of this tree with minmtime=T1 + 2, should not find the modified file.")
         dirs_files_list = j.sal.fs.listFilesAndDirsInDir(
-            base_dir, recursive=False, followSymlinks=False, listSymlinks=False, minmtime=now + 2
+            base_dir, recursive=True, followSymlinks=False, listSymlinks=False, minmtime=now + 2
         )
         self.assertNotIn(file_path, dirs_files_list)
+        self.assertNotIn(dir_path, dirs_files_list)
 
         self.info("List the parent directory of this tree with minmtime=T1 - 2, should find the modified file.")
         dirs_files_list = j.sal.fs.listFilesAndDirsInDir(
-            base_dir, recursive=False, followSymlinks=False, listSymlinks=False, minmtime=now - 2
+            base_dir, recursive=True, followSymlinks=False, listSymlinks=False, minmtime=now - 2
         )
         self.assertIn(file_path, dirs_files_list)
+        self.assertIn(dir_path, dirs_files_list)
 
         self.info("List the parent directory of this tree with maxmtime=T1 + 2, should find the modified file.")
         dirs_files_list = j.sal.fs.listFilesAndDirsInDir(
-            base_dir, recursive=False, followSymlinks=False, listSymlinks=False, maxmtime=now + 2
+            base_dir, recursive=True, followSymlinks=False, listSymlinks=False, maxmtime=now + 2
         )
         self.assertIn(file_path, dirs_files_list)
+        self.assertIn(dir_path, dirs_files_list)
 
         self.info("List the parent directory of this tree with maxmtime=T1 - 2, should not find the modified file.")
         dirs_files_list = j.sal.fs.listFilesAndDirsInDir(
-            base_dir, recursive=False, followSymlinks=False, listSymlinks=False, maxmtime=now - 2
+            base_dir, recursive=True, followSymlinks=False, listSymlinks=False, maxmtime=now - 2
         )
         self.assertNotIn(file_path, dirs_files_list)
+        self.assertNotIn(dir_path, dirs_files_list)
 
     @parameterized.expand([[True, True], [True, False], [False, True], [False, False]])
     def test015_list_files_and_dirs_in_dir_symlinks(self, list_links, follow_links):
@@ -824,10 +830,10 @@ class FS(BaseTest):
         **Test scenario**
         #. Create a tree with many sub directories and files.
         #. Modify a file and take timestamp of now (T1).
-        #. List the parent directory of this tree with minmtime=T1 + 10, should not find the modified file.
-        #. List the parent directory of this tree with minmtime=T1 - 10, should file the modified file.
-        #. List the parent directory of this tree with maxmtime=T1 + 10, should file the modified file.
-        #. List the parent directory of this tree with maxmtime=T1 - 10, should not file the modified file.
+        #. List the parent directory of this tree with minmtime=T1 + 2, should not find the modified file.
+        #. List the parent directory of this tree with minmtime=T1 - 2, should file the modified file.
+        #. List the parent directory of this tree with maxmtime=T1 + 2, should file the modified file.
+        #. List the parent directory of this tree with maxmtime=T1 - 2, should not file the modified file.
         """
         self.info("Create a tree with many sub directories and files.")
         base_dir = self.create_tree()
@@ -841,27 +847,27 @@ class FS(BaseTest):
         j.sal.fs.writeFile(file_path, content)
         now = datetime.now().timestamp()
 
-        self.info("List the parent directory of this tree with minmtime=T1 + 10, should not find the modified file.")
+        self.info("List the parent directory of this tree with minmtime=T1 + 2, should not find the modified file.")
         files = j.sal.fs.listFilesInDir(
-            base_dir, recursive=False, followSymlinks=False, listSymlinks=False, minmtime=now + 2
+            base_dir, recursive=True, followSymlinks=False, listSymlinks=False, minmtime=now + 2
         )
         self.assertNotIn(file_path, files)
 
-        self.info("List the parent directory of this tree with minmtime=T1 - 10, should file the modified file.")
+        self.info("List the parent directory of this tree with minmtime=T1 - 2, should file the modified file.")
         files = j.sal.fs.listFilesInDir(
-            base_dir, recursive=False, followSymlinks=False, listSymlinks=False, minmtime=now - 2
+            base_dir, recursive=True, followSymlinks=False, listSymlinks=False, minmtime=now - 2
         )
         self.assertIn(file_path, files)
 
-        self.info("List the parent directory of this tree with maxmtime=T1 + 10, should file the modified file.")
+        self.info("List the parent directory of this tree with maxmtime=T1 + 2, should file the modified file.")
         files = j.sal.fs.listFilesInDir(
-            base_dir, recursive=False, followSymlinks=False, listSymlinks=False, maxmtime=now + 2
+            base_dir, recursive=True, followSymlinks=False, listSymlinks=False, maxmtime=now + 2
         )
         self.assertIn(file_path, files)
 
-        self.info("List the parent directory of this tree with maxmtime=T1 - 10, should not file the modified file.")
+        self.info("List the parent directory of this tree with maxmtime=T1 - 2, should not file the modified file.")
         files = j.sal.fs.listFilesInDir(
-            base_dir, recursive=False, followSymlinks=False, listSymlinks=False, maxmtime=now - 2
+            base_dir, recursive=True, followSymlinks=False, listSymlinks=False, maxmtime=now - 2
         )
         self.assertNotIn(file_path, files)
 
@@ -1158,7 +1164,11 @@ class FS(BaseTest):
         j.sal.fs.symlinkFilesInDir(dir_path, dest_path, includeDirs=False)
 
         self.info("Check that symlinks are created for files only.")
-        dest_list = [x for x in os.listdir(dest_path) if os.path.islink(os.path.join(dest_path, x))]
+        dest_list = [
+            x
+            for x in os.listdir(dest_path)
+            if os.path.islink(os.path.join(dest_path, x)) and os.path.islink(os.path.join(dest_path, x))
+        ]
         self.assertEquals(len(dest_list), 3)
 
         self.info("Create symlinks for all files under (D1) and target (D2) with includeDirs=True.")
@@ -1462,17 +1472,18 @@ class FS(BaseTest):
             )
             if ".log" in x
         ]
+        child_log = [os.path.splitext(os.path.join(base_dir, x))[0] for x in os.listdir(base_dir) if ".log" in x]
         j.sal.fs.changeFileNames(toReplace=".log", replaceWith=".java", pathToSearchIn=base_dir, recursive=False)
 
         self.info("Check that children files are only changed.")
         changed_files = [
-            x
+            os.path.splitext(x)[0]
             for x in self.list_files_dirs_in_dir(
                 base_dir, files_list=True, dirs_list=False, followlinks=False, show_links=False
             )
             if ".java" in x
         ]
-        self.assertEquals(len(changed_files), 1)
+        self.assertEquals(changed_files, child_log)
 
         self.info("Change these files names again by replacing (W1) with another word (W2) with recursive=True.")
         j.sal.fs.changeFileNames(toReplace=".log", replaceWith=".java", pathToSearchIn=base_dir, recursive=True)
@@ -1536,21 +1547,25 @@ class FS(BaseTest):
 
         **Test scenario**
         #. Get current working directory and check it.
-        #. Change working directory and check it.
+        #. Change working directory and get it (CWD).
+        #. Change working directory back to the origial one.
+        #. Check that (CWD) is the second path.
         """
         self.info("Get current working directory and check it.")
         cur_path_1 = j.sal.fs.getcwd()
         path_1 = os.path.abspath(".")
         self.assertEquals(cur_path_1, path_1)
 
-        self.info("Change working directory and check it.")
+        self.info("Change working directory and get it (CWD).")
         path_2 = self.temp_path
         j.sal.fs.changeDir(path_2)
         cur_path_2 = j.sal.fs.getcwd()
-        self.assertEquals(cur_path_2, path_2)
 
-        self.info("Change working directory back to the origial one")
+        self.info("Change working directory back to the origial one.")
         j.sal.fs.changeDir(path_1)
+
+        self.info("Check that (CWD) is the second path.")
+        self.assertEquals(cur_path_2, path_2)
 
     def test032_write_read_check_size_binary_file(self):
         """TC358
@@ -1563,26 +1578,27 @@ class FS(BaseTest):
         #. Get file size and check it.
         """
         self.info("Write binary file.")
-        binary_content = self.random_string().encode()
+        content = self.random_string()
         file_name = self.random_string()
         file_path = os.path.join(self.temp_path, file_name)
-        j.sal.fs.writeFile(file_path, binary_content)
+        with open(file_path, "wb") as f:
+            pickle.dump(content, f)
 
         self.info("Check that file has been created and it is a binary file.")
         os.path.exists(file_path)
-        with open(file_path, "rb") as f:
-            content = f.read()
-        self.assertEquals(content, binary_content)
+        self.assertTrue(j.sal.fs.isBinaryFile(file_path))
 
         self.info("Read this file and check that its content.")
-        content = j.sal.fs.readFile(file_path, binary=True)
+        with open(file_path, "rb") as f:
+            expected_content = f.read()
+        result_content = j.sal.fs.readFile(file_path, binary=True)
+        self.assertEquals(result_content, expected_content)
 
         self.info("Get file size and check it.")
         file_size = j.sal.fs.fileSize(file_path)
         size = os.stat(file_path).st_size
         self.assertEquals(file_size, size)
 
-    @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/38")
     def test033_md5sum(self):
         """TC359
         Test case for getting md5sum for a file and directory.
@@ -1591,9 +1607,9 @@ class FS(BaseTest):
         #. Create a file and get its md5sum.
         #. Calculate this file md5sum.
         #. Check that both md5sum are the same.
-        #. Create a directory with some files.
-        #. Get the md5sum for this directory using j.sal.fs.getFolderMD5sum.
-        #. Calculate the md5sum for this directory.
+        #. Create a tree with some directories and files and copy it to another directory.
+        #. Get the md5sum for the original directory.
+        #. Get the md5sum for the copied directory.
         #. Check that both md5sum are the same.
         """
         self.info("Create a file and get its md5sum.")
@@ -1609,21 +1625,17 @@ class FS(BaseTest):
         self.info("Check that both md5sum are the same.")
         self.assertEquals(md5sum, file_md5sum)
 
-        self.info("Create a directory with some files.")
+        self.info("Create a tree with some directories and files and copy it to another directory.")
+        base_dir = self.create_tree()
         dir_name = self.random_string()
         dir_path = os.path.join(self.temp_path, dir_name)
-        j.sal.fs.createDir(dir_path)
-        for _ in range(5):
-            file = self.random_string()
-            path = os.path.join(dir_path, file)
-            content = self.random_string()
-            j.sal.fs.writeFile(path, content)
+        j.sal.fs.copyDirTree(base_dir, dir_path, keepsymlinks=True, recursive=True)
 
-        self.info("Get the md5sum for this directory using j.sal.fs.getFolderMD5sum.")
-        dir_md5 = j.sal.fs.getFolderMD5sum(dir_path)
+        self.info("Get the md5sum for the original directory.")
+        orignal_md5sum = j.sal.fs.getFolderMD5sum(base_dir)
 
-        self.info("Calculate the md5sum for this directory.")
-        dir_md5sum = self.md5sum(dir_path)
+        self.info("Get the md5sum for the copied directory.")
+        copied_md5sum = j.sal.fs.getFolderMD5sum(dir_path)
 
         self.info("Check that both md5sum are the same.")
-        self.assertEquals(dir_md5, dir_md5sum)
+        self.assertEquals(copied_md5sum, orignal_md5sum)
