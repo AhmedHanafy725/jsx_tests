@@ -5,6 +5,7 @@ import unittest
 import time
 from datetime import datetime
 from pwd import getpwuid
+from subprocess import run, PIPE
 
 from Jumpscale import j
 from parameterized import parameterized
@@ -1747,19 +1748,21 @@ class FS(BaseTest):
         Test case for finding a line in a file with a regex.
         
         **Test scenario**
-        #. Create a file with multiple lines.
-        #. Add a line with specific regex (R1) to this file.
+        #. Create a file with one of its lines has a specific regex (R1).
         #. Find in this file what is matched with regex (R1), should return only this this line.
         """
-        pass
+        self.info("Create a file with multiple lines.")
+        file_name = self.random_string()
+        file_path = os.path.join(self.temp_path, file_name)
+        content = "\n".join([self.random_string(), "1_2", self.random_string()])
+        j.sal.fs.writeFile(file_path, content)
 
-    def test039_path_operation(self):
-        """
-        Test case for making some operation on path.
-        """
-        pass
+        self.info("Find in this file what is matched with regex (R1), should return only this this line.")
+        cmd = f'kosmos "j.tools.logger.debug=True; j.sal.fs.grep(\\"{file_path}\\", \\"[0-9][_][0-9]\\")"'
+        response = run(cmd, shell=True, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        self.assertIn(file_path, response.stdout)
 
-    def test040_is_mount_absolute(self):
+    def test039_is_mount_absolute(self):
         """
         Test case for checking if the directory is mounted and absolute.
 
@@ -1783,7 +1786,7 @@ class FS(BaseTest):
         path = os.path.join(self.temp_path, name)
         self.assertTrue(j.sal.fs.isAbsolute(path))
 
-    def test041_ascii(self):
+    def test040_ascii(self):
         """
         Test case for writting, reading and checking ascii file.
 
@@ -1809,7 +1812,7 @@ class FS(BaseTest):
         content = j.sal.fs.readFile(file_path, binary=True)
         self.assertEquals(content, ascii_content)
 
-    def test042_hard_link(self):
+    def test041_hard_link(self):
         """
         Test case for making a hard link for a file.
 
@@ -1847,7 +1850,7 @@ class FS(BaseTest):
 
     @parameterized.expand(["include", "exclude"])
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/99")
-    def test043_compress_include_exclude_path_regex(self, path_option):
+    def test042_compress_include_exclude_path_regex(self, path_option):
         """
         Test case for compressing files with including/excluding path regex.
 
@@ -1894,7 +1897,7 @@ class FS(BaseTest):
 
     @parameterized.expand(["include", "exclude"])
     @unittest.skip("https://github.com/threefoldtech/jumpscaleX_core/issues/99")
-    def test044_compress_include_exclude_content_regex(self, content_option):
+    def test043_compress_include_exclude_content_regex(self, content_option):
         """
         Test case for compressing files with including/excluding content regex.
 
@@ -1941,7 +1944,7 @@ class FS(BaseTest):
             self.assertEquals(before_md5sum, after_md5sum)
 
     @parameterized.expand([(0,), (1,)])
-    def test045_compress_depth(self, depth):
+    def test044_compress_depth(self, depth):
         """
         Test case for compressing files with directories depth.
 
@@ -1978,7 +1981,7 @@ class FS(BaseTest):
         after_md5sum = self.md5sum(untar_dest_path)
         self.assertEquals(before_md5sum, after_md5sum)
 
-    def test046_compress_with_extra_files(self):
+    def test045_compress_with_extra_files(self):
         """
         Test case for compressing files with extra files.
 
@@ -2017,7 +2020,7 @@ class FS(BaseTest):
         first_tree_md5sum_after = self.md5sum(untar_dest_path)
         self.assertEquals(first_tree_md5sum_after, first_tree_md5sum)
 
-    def test047_compress_with_dest(self):
+    def test046_compress_with_dest(self):
         """
         Test case for compressing files with specify the destination in tar.
 
@@ -2049,7 +2052,7 @@ class FS(BaseTest):
         after_md5sum = self.md5sum(dest_path)
         self.assertEquals(before_md5sum, after_md5sum)
 
-    def test048_remove_irrelevant_files(self):
+    def test047_remove_irrelevant_files(self):
         """
         Test case for removing irrelevant files in a directory.
 
@@ -2079,7 +2082,7 @@ class FS(BaseTest):
         self.assertNotIn(bak_path, dirs_files_list)
         self.assertNotIn(pyc_path, dirs_files_list)
 
-    def test049_validate_files_names(self):
+    def test048_validate_files_names(self):
         """
         Test case for validate files names.
 
