@@ -6,8 +6,8 @@ from unittest import skip
 
 class TestInstallationInDocker(BaseTest):
     def setUp(self):
-        print('\t')
-        self.info('Test case : {}'.format(self._testMethodName))
+        print("\t")
+        self.info("Test case : {}".format(self._testMethodName))
 
     def tearDown(self):
         self.info("Clean the installation")
@@ -22,9 +22,7 @@ class TestInstallationInDocker(BaseTest):
 
     def install_jsx_container(self):
         self.CONTAINER_NAME = str(uuid.uuid4()).replace("-", "")[:10]
-        self.info(
-            "Install container jumpscale from {} branch in {} os type".format(self.get_js_branch(), self.get_os_type())
-        )
+        self.info("Install container jumpscale in {} os type".format(self.get_os_type()))
         output, error = self.jumpscale_installation("container-install", "-n {}".format(self.CONTAINER_NAME))
         self.assertFalse(error)
         self.assertIn("installed successfully", output.decode())
@@ -104,12 +102,12 @@ class TestInstallationInDocker(BaseTest):
         command = "cat /sandbox/code/github/threefoldtech/jumpscaleX/.git/HEAD"
         output, _ = self.docker_command(command)
         branch = output.decode().replace("\n", "").split("/")[-1]
-        self.assertEqual(branch, self.js_branch)
+        self.assertEqual(branch, "development")
 
         self.info("check  that ssh-key loaded in docker successfully")
         command = "cat /root/.ssh/authorized_keys"
         output, error = self.docker_command(command)
-        for key in self.get_loaded_key().split('\n'):
+        for key in self.get_loaded_key().split("\n"):
             self.assertIn(key, output.decode().strip("\n"))
 
     def test04_verify_container_delete_option(self):
@@ -170,7 +168,7 @@ class TestInstallationInDocker(BaseTest):
         output, error = self.docker_command(command)
         self.assertNotIn(file_name, output.decode())
 
-    @skip('To re-do')
+    @skip("To re-do")
     def test07_verify_container_clean_options(self):
         """
 
@@ -226,8 +224,8 @@ class TestInstallationInDocker(BaseTest):
 
 class TestInstallationInSystem(BaseTest):
     def setUp(self):
-        print('\t')
-        self.info('Test case : {}'.format(self._testMethodName))
+        print("\t")
+        self.info("Test case : {}".format(self._testMethodName))
 
     def tearDown(self):
         self.info("Clean the installation")
@@ -241,7 +239,7 @@ class TestInstallationInSystem(BaseTest):
         #. Install jumpscale from specific branch
         #. Run kosmos ,should succeed
         """
-        self.info("Install jumpscale from {} branch on {}".format(self.js_branch, self.os_type))
+        self.info("Install jumpscale on {}".format(self.os_type))
         output, error = self.jumpscale_installation("install")
         self.assertFalse(error)
         self.assertIn("installed successfully", output.decode())
@@ -258,7 +256,7 @@ class TestInstallationInSystem(BaseTest):
         **  test jumpscale inssystem on mac or linux depending on os_type. **
         #. Run jsx generate command, should run successfully, and generate.
         """
-        self.info("Install jumpscale from {} branch on {}".format(self.js_branch, self.os_type))
+        self.info("Install jumpscale on {}".format(self.os_type))
         output, error = self.jumpscale_installation("install")
         self.assertFalse(error)
         self.assertIn("installed successfully", output.decode())
@@ -274,7 +272,8 @@ class TestInstallationInSystem(BaseTest):
 
         self.info("make sure that jumpscale_generated file is generated again")
         self.assertTrue(
-            os.path.exists("/sandbox/code/github/threefoldtech/jumpscaleX/Jumpscale/jumpscale_generated.py"))
+            os.path.exists("/sandbox/code/github/threefoldtech/jumpscaleX/Jumpscale/jumpscale_generated.py")
+        )
 
     def Test03_insystem_installation_r_option_no_jsx_before(self):
         """
@@ -285,9 +284,7 @@ class TestInstallationInSystem(BaseTest):
         #. Run kosmos ,should succeed
         """
 
-        self.info("Install jumpscale from {} branch on {} using no_interactive and re-install".format(
-            self.js_branch, self.os_type))
-
+        self.info("Install jumpscale on {} using no_interactive and re-install".format(self.os_type))
         output, error = self.jumpscale_installation("install", "-r")
         self.assertFalse(error)
         self.assertIn("installed successfully", output.decode())
@@ -307,13 +304,12 @@ class TestInstallationInSystem(BaseTest):
         #. Run kosmos ,should succeed
         """
 
-        self.info("Install jumpscale from {} branch on {}".format(self.js_branch, self.os_type))
+        self.info("Install jumpscale on {}".format(self.os_type))
         output, error = self.jumpscale_installation("install")
         self.assertFalse(error)
         self.assertIn("installed successfully", output.decode())
 
-        self.info("Install jumpscale from {} branch on {} using no_interactive and re-install".format(
-            self.js_branch, self.os_type))
+        self.info("Install jumpscale on {} using no_interactive and re-install".format(self.os_type))
 
         output, error = self.jumpscale_installation("install", "-r")
         self.assertFalse(error)
@@ -333,7 +329,7 @@ class TestInstallationInSystem(BaseTest):
         #.  destroy; make sure it doesn't exist
         """
 
-        self.info("Install jumpscale from {} branch on {}".format(self.js_branch, self.os_type))
+        self.info("Install jumpscale on {}".format(self.os_type))
         output, error = self.jumpscale_installation("install")
         self.assertFalse(error)
         self.assertIn("installed successfully", output.decode())
@@ -341,13 +337,15 @@ class TestInstallationInSystem(BaseTest):
         self.info("use kosmos to create github client, make sure that there is no error")
         client_name = str(uuid.uuid4()).replace("-", "")[:10]
         command = """. /sandbox/env.sh && echo 'c=j.clients.github.new("{}", token="test_bcdb_delete_option"); c.save()' | jsx kosmos """.format(
-            client_name)
+            client_name
+        )
         output, error = self.os_command(command)
         self.assertFalse(error)
 
         self.info("check that the client is existing")
         command = """. /sandbox/env.sh && echo 'print(j.clients.github.get("{}").name)' | jsx kosmos """.format(
-            client_name)
+            client_name
+        )
         output, error = self.os_command(command)
         self.assertFalse(error)
         self.assertIn(client_name, output.decode())
@@ -359,9 +357,10 @@ class TestInstallationInSystem(BaseTest):
 
         self.info("check that the client is not existing")
         command = """. /sandbox/env.sh && echo 'print(j.clients.github.get("{}").name)' | jsx kosmos """.format(
-            client_name)
+            client_name
+        )
         output, error = self.os_command(command)
-        self.assertIn('Missing Github token or login/password', output.decode())
+        self.assertIn("Missing Github token or login/password", output.decode())
 
     def Test06_check_option(self):
         """
@@ -371,7 +370,7 @@ class TestInstallationInSystem(BaseTest):
         #. check option ,ake sure that secret, private key, bcdband kosmos are working fine.
         """
 
-        self.info("Install jumpscale from {} branch on {}".format(self.js_branch, self.os_type))
+        self.info("Install jumpscale on {}".format(self.os_type))
         output, error = self.jumpscale_installation("install")
         self.assertFalse(error)
         self.assertIn("installed successfully", output.decode())
