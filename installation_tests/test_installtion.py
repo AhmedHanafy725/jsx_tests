@@ -99,7 +99,7 @@ class TestInstallationInDocker(BaseTest):
         self.assertIn("process", output.decode())
 
         self.info(" Check the branch of jumpscale code, should be same as installation branch.")
-        command = "cat /sandbox/code/github/threefoldtech/jumpscaleX/.git/HEAD"
+        command = "cat /sandbox/code/github/threefoldtech/jumpscaleX_core/.git/HEAD"
         output, _ = self.docker_command(command)
         branch = output.decode().replace("\n", "").split("/")[-1]
         self.assertEqual(branch, "development")
@@ -245,11 +245,12 @@ class TestInstallationInSystem(BaseTest):
         self.assertIn("installed successfully", output.decode())
 
         self.info("Run kosmos shell,should succeed")
-        command = ". /sandbox/env.sh && echo 'from Jumpscale import j; print(j)' | jsx kosmos "
+        command = ". /sandbox/env.sh && kosmos 'from Jumpscale import j; print(j)'"
         output, error = self.os_command(command)
         self.assertFalse(error)
         self.assertIn("Jumpscale.Jumpscale object", output.decode())
 
+    @skip("Not exist anymore jumpscale_generated.py")
     def Test02_verify_jsx_working_insystem(self):
         """
         test TC59
@@ -290,7 +291,7 @@ class TestInstallationInSystem(BaseTest):
         self.assertIn("installed successfully", output.decode())
 
         self.info(" Run kosmos shell,should succeed")
-        command = ". /sandbox/env.sh && echo 'from Jumpscale import j; print(j)' | jsx kosmos "
+        command = ". /sandbox/env.sh && kosmos 'from Jumpscale import j; print(j)'"
         output, error = self.os_command(command)
         self.assertFalse(error)
         self.assertIn("Jumpscale.Jumpscale object", output.decode())
@@ -316,11 +317,12 @@ class TestInstallationInSystem(BaseTest):
         self.assertIn("installed successfully", output.decode())
 
         self.info(" Run kosmos shell,should succeed")
-        command = ". /sandbox/env.sh && echo 'from Jumpscale import j; print(j)' | jsx kosmos "
+        command = ". /sandbox/env.sh && kosmos 'from Jumpscale import j; print(j)'"
         output, error = self.os_command(command)
         self.assertFalse(error)
         self.assertIn("Jumpscale.Jumpscale object", output.decode())
 
+    @skip("Not found anymore bcdb-system-delete")
     def Test05_bcdb_system_delete_option(self):
         """
         test TC203, TC204
@@ -336,14 +338,14 @@ class TestInstallationInSystem(BaseTest):
 
         self.info("use kosmos to create github client, make sure that there is no error")
         client_name = str(uuid.uuid4()).replace("-", "")[:10]
-        command = """. /sandbox/env.sh && echo 'c=j.clients.github.new("{}", token="test_bcdb_delete_option"); c.save()' | jsx kosmos """.format(
+        command = """. /sandbox/env.sh && kosmos 'c=j.clients.github.new("{}", token="test_bcdb_delete_option"); c.save()'""".format(
             client_name
         )
         output, error = self.os_command(command)
         self.assertFalse(error)
 
         self.info("check that the client is existing")
-        command = """. /sandbox/env.sh && echo 'print(j.clients.github.get("{}").name)' | jsx kosmos """.format(
+        command = """. /sandbox/env.sh && kosmos 'print(j.clients.github.get("{}").name)'""".format(
             client_name
         )
         output, error = self.os_command(command)
@@ -351,12 +353,12 @@ class TestInstallationInSystem(BaseTest):
         self.assertIn(client_name, output.decode())
 
         self.info("use bcdb_system_delete option to delete database, and check if the client still exists or not")
-        command = ". /sandbox/env.sh && jsx bcdb-system-delete"
+        command = ". /sandbox/env.sh && /tmp/jsx bcdb-system-delete"
         output, error = self.os_command(command)
         self.assertFalse(error)
 
         self.info("check that the client is not existing")
-        command = """. /sandbox/env.sh && echo 'print(j.clients.github.get("{}").name)' | jsx kosmos """.format(
+        command = """. /sandbox/env.sh && kosmos 'print(j.clients.github.get("{}").name)'""".format(
             client_name
         )
         output, error = self.os_command(command)
