@@ -168,37 +168,37 @@ class TestInstallationInDocker(BaseTest):
         output, error = self.docker_command(command)
         self.assertNotIn(file_name, output.decode())
 
-    @skip("To re-do")
-    def test07_verify_container_clean_options(self):
-        """
+    # @skip("To re-do")
+    # def test07_verify_container_clean_options(self):
+    #     """
 
-        **Verify that container-clean works successfully **
-        """
-        self.install_jsx_container()
-        command = 'docker ps -a | grep %s | awk "{print \$2}"' % self.CONTAINER_NAME
-        output, error = self.os_command(command)
-        container_image = output.decode()
+    #     **Verify that container-clean works successfully **
+    #     """
+    #     self.install_jsx_container()
+    #     command = 'docker ps -a | grep %s | awk "{print \$2}"' % self.CONTAINER_NAME
+    #     output, error = self.os_command(command)
+    #     container_image = output.decode()
 
-        self.info("Run container stop ")
-        command = "/tmp/jsx container-stop -n {}".format(self.CONTAINER_NAME)
-        self.os_command(command)
+    #     self.info("Run container stop ")
+    #     command = "/tmp/jsx container-stop -n {}".format(self.CONTAINER_NAME)
+    #     self.os_command(command)
 
-        self.info("Run container-clean with new name")
-        new_container = str(uuid.uuid4()).replace("-", "")[:10]
-        command = "/tmp/jsx container-clean -n {}".format(new_container)
-        output, error = self.os_command(command)
-        self.assertIn("import docker", output.decode())
+    #     self.info("Run container-clean with new name")
+    #     new_container = str(uuid.uuid4()).replace("-", "")[:10]
+    #     command = "/tmp/jsx container-clean -n {}".format(new_container)
+    #     output, error = self.os_command(command)
+    #     self.assertIn("import docker", output.decode())
 
-        self.info("Check that new container created with same image")
-        command = "ls /sandbox/var/containers/{}/exports/".format(new_container)
-        output, error = self.os_command(command)
-        self.assertFalse(error)
-        self.assertIn("tar", output.decode())
+    #     self.info("Check that new container created with same image")
+    #     command = "ls /sandbox/var/containers/{}/exports/".format(new_container)
+    #     output, error = self.os_command(command)
+    #     self.assertFalse(error)
+    #     self.assertIn("tar", output.decode())
 
-        command = 'docker ps -a -f status=running  | grep %s | awk "{print \$2}"' % self.CONTAINER_NAME
-        output, error = self.os_command(command)
-        new_container_image = output.decode()
-        self.assertEqual(container_image, new_container_image)
+    #     command = 'docker ps -a -f status=running  | grep %s | awk "{print \$2}"' % self.CONTAINER_NAME
+    #     output, error = self.os_command(command)
+    #     new_container_image = output.decode()
+    #     self.assertEqual(container_image, new_container_image)
 
     def test08_verify_reinstall_d_option(self):
         """
@@ -250,31 +250,31 @@ class TestInstallationInSystem(BaseTest):
         self.assertFalse(error)
         self.assertIn("Jumpscale.Jumpscale object", output.decode())
 
-    @skip("Not exist anymore jumpscale_generated.py")
-    def Test02_verify_jsx_working_insystem(self):
-        """
-        test TC59
-        **  test jumpscale inssystem on mac or linux depending on os_type. **
-        #. Run jsx generate command, should run successfully, and generate.
-        """
-        self.info("Install jumpscale on {}".format(self.os_type))
-        output, error = self.jumpscale_installation("install")
-        self.assertFalse(error)
-        self.assertIn("installed successfully", output.decode())
+    # @skip("Not exist anymore jumpscale_generated.py")
+    # def Test02_verify_jsx_working_insystem(self):
+    #     """
+    #     test TC59
+    #     **  test jumpscale inssystem on mac or linux depending on os_type. **
+    #     #. Run jsx generate command, should run successfully, and generate.
+    #     """
+    #     self.info("Install jumpscale on {}".format(self.os_type))
+    #     output, error = self.jumpscale_installation("install")
+    #     self.assertFalse(error)
+    #     self.assertIn("installed successfully", output.decode())
 
-        self.info("Check generate option, using jsx generate cmd")
+    #     self.info("Check generate option, using jsx generate cmd")
 
-        self.info("remove jumpscale_generated file")
-        os.remove("/sandbox/code/github/threefoldtech/jumpscaleX/Jumpscale/jumpscale_generated.py")
+    #     self.info("remove jumpscale_generated file")
+    #     os.remove("/sandbox/code/github/threefoldtech/jumpscaleX/Jumpscale/jumpscale_generated.py")
 
-        self.info("Check generate option")
-        command = ". /sandbox/env.sh && jsx generate"
-        self.os_command(command)
+    #     self.info("Check generate option")
+    #     command = ". /sandbox/env.sh && jsx generate"
+    #     self.os_command(command)
 
-        self.info("make sure that jumpscale_generated file is generated again")
-        self.assertTrue(
-            os.path.exists("/sandbox/code/github/threefoldtech/jumpscaleX/Jumpscale/jumpscale_generated.py")
-        )
+    #     self.info("make sure that jumpscale_generated file is generated again")
+    #     self.assertTrue(
+    #         os.path.exists("/sandbox/code/github/threefoldtech/jumpscaleX/Jumpscale/jumpscale_generated.py")
+    #     )
 
     def Test03_insystem_installation_r_option_no_jsx_before(self):
         """
@@ -322,47 +322,47 @@ class TestInstallationInSystem(BaseTest):
         self.assertFalse(error)
         self.assertIn("Jumpscale.Jumpscale object", output.decode())
 
-    @skip("Not found anymore bcdb-system-delete")
-    def Test05_bcdb_system_delete_option(self):
-        """
-        test TC203, TC204
-        ** test bcdb_system_delete option on Linux and Mac OS **
-        #. Create an instance from github client; get it
-        #.  destroy; make sure it doesn't exist
-        """
+    # @skip("Not found anymore bcdb-system-delete")
+    # def Test05_bcdb_system_delete_option(self):
+    #     """
+    #     test TC203, TC204
+    #     ** test bcdb_system_delete option on Linux and Mac OS **
+    #     #. Create an instance from github client; get it
+    #     #.  destroy; make sure it doesn't exist
+    #     """
 
-        self.info("Install jumpscale on {}".format(self.os_type))
-        output, error = self.jumpscale_installation("install")
-        self.assertFalse(error)
-        self.assertIn("installed successfully", output.decode())
+    #     self.info("Install jumpscale on {}".format(self.os_type))
+    #     output, error = self.jumpscale_installation("install")
+    #     self.assertFalse(error)
+    #     self.assertIn("installed successfully", output.decode())
 
-        self.info("use kosmos to create github client, make sure that there is no error")
-        client_name = str(uuid.uuid4()).replace("-", "")[:10]
-        command = """. /sandbox/env.sh && kosmos 'c=j.clients.github.new("{}", token="test_bcdb_delete_option"); c.save()'""".format(
-            client_name
-        )
-        output, error = self.os_command(command)
-        self.assertFalse(error)
+    #     self.info("use kosmos to create github client, make sure that there is no error")
+    #     client_name = str(uuid.uuid4()).replace("-", "")[:10]
+    #     command = """. /sandbox/env.sh && kosmos 'c=j.clients.github.new("{}", token="test_bcdb_delete_option"); c.save()'""".format(
+    #         client_name
+    #     )
+    #     output, error = self.os_command(command)
+    #     self.assertFalse(error)
 
-        self.info("check that the client is existing")
-        command = """. /sandbox/env.sh && kosmos 'print(j.clients.github.get("{}").name)'""".format(
-            client_name
-        )
-        output, error = self.os_command(command)
-        self.assertFalse(error)
-        self.assertIn(client_name, output.decode())
+    #     self.info("check that the client is existing")
+    #     command = """. /sandbox/env.sh && kosmos 'print(j.clients.github.get("{}").name)'""".format(
+    #         client_name
+    #     )
+    #     output, error = self.os_command(command)
+    #     self.assertFalse(error)
+    #     self.assertIn(client_name, output.decode())
 
-        self.info("use bcdb_system_delete option to delete database, and check if the client still exists or not")
-        command = ". /sandbox/env.sh && /tmp/jsx bcdb-system-delete"
-        output, error = self.os_command(command)
-        self.assertFalse(error)
+    #     self.info("use bcdb_system_delete option to delete database, and check if the client still exists or not")
+    #     command = ". /sandbox/env.sh && /tmp/jsx bcdb-system-delete"
+    #     output, error = self.os_command(command)
+    #     self.assertFalse(error)
 
-        self.info("check that the client is not existing")
-        command = """. /sandbox/env.sh && kosmos 'print(j.clients.github.get("{}").name)'""".format(
-            client_name
-        )
-        output, error = self.os_command(command)
-        self.assertIn("Missing Github token or login/password", output.decode())
+    #     self.info("check that the client is not existing")
+    #     command = """. /sandbox/env.sh && kosmos 'print(j.clients.github.get("{}").name)'""".format(
+    #         client_name
+    #     )
+    #     output, error = self.os_command(command)
+    #     self.assertIn("Missing Github token or login/password", output.decode())
 
     def Test06_check_option(self):
         """
