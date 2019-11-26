@@ -1,4 +1,5 @@
 from unittest import TestCase, skip
+from subprocess import run, PIPE
 from uuid import uuid4
 import random
 import time
@@ -16,6 +17,17 @@ class TestRedisConfig(TestCase):
 
     startup = None
     redis_client = None
+
+    def tearDown(self):
+        if self.startup:
+            self.startup.stop()
+            self.startup.delete()
+        if self.redis_client:
+            self.redis_client.delete()
+
+        j.clients.redis._cache_clear()
+        j.sal.process.killProcessByName("redis-server")
+        super().tearDown()
 
     @staticmethod
     def random_string():
@@ -44,16 +56,18 @@ class TestRedisConfig(TestCase):
         self.startup = j.servers.startupcmd.get("test_redis_config", cmd_start=cmd)
         self.startup.start()
 
-    def tearDown(self):
-        if self.startup:
-            self.startup.stop()
-            self.startup.delete()
-        if self.redis_client:
-            self.redis_client.delete()
-
-        j.clients.redis._cache_clear()
-        j.sal.process.killProcessByName("redis-server")
-        super().tearDown()
+    def wait_for_server(self, port=None):
+        if port:
+            response = j.sal.nettools.waitConnectionTest(ipaddr="localhost", port=port, timeout=5)
+            return response
+        else:
+            for _ in range(5):
+                res = run("fuser -a /tmp/redis.sock", shell=True, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+                stdout = res.stdout
+                if stdout:
+                    time.sleep(1)
+                    return True
+                time.sleep(1)
 
     @parameterized.expand(["port", "unixsocket"])
     def test001_get_using_port_unixsocket(self, type):
@@ -69,9 +83,10 @@ class TestRedisConfig(TestCase):
         if type == "port":
             port = random.randint(10000, 11000)
             self.start_redis_server(port=port)
+            self.wait_for_server(port=port)
         else:
             self.start_redis_server()
-        time.sleep(5)
+            self.wait_for_server()
 
         self.info(f"Get redis client using {type}.")
         name = self.random_string()
@@ -95,7 +110,7 @@ class TestRedisConfig(TestCase):
         """
         self.info("Start redis server on unixsocket with password.")
         self.start_redis_server(password=True)
-        time.sleep(5)
+        self.wait_for_server()
 
         self.info(f"Try to get redis client with password={password}")
         name = self.random_string()
@@ -124,7 +139,7 @@ class TestRedisConfig(TestCase):
         self.info("Start redis server on a random port.")
         port = random.randint(10000, 11000)
         self.start_redis_server(port=port)
-        time.sleep(5)
+        self.wait_for_server(port=port)
 
         self.info(f"Get redis client with set_patch={patch}.")
         name = self.random_string()
