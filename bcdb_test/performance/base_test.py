@@ -1,5 +1,6 @@
 from unittest import TestCase
 from uuid import uuid4
+import multiprocessing
 import os
 
 from loguru import logger
@@ -42,3 +43,17 @@ class BaseTest(TestCase):
         chart.generate_chart(
             labels=labels, datasets=datasets, title=title, yaxis=yaxis, xaxis=xaxis, output_path=output_path
         )
+
+    def multi_process(self, target, process_number):
+        manager = multiprocessing.Manager()
+        write_result = manager.list()
+        jobs = []
+        for _ in range(process_number):
+            process = multiprocessing.Process(target=target, args=(write_result,))
+            jobs.append(process)
+            process.start()
+
+        for proc in jobs:
+            proc.join()
+
+        return write_result
