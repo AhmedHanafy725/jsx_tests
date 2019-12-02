@@ -26,18 +26,27 @@ class BaseTest(TestCase):
     def info(message):
         BaseTest.LOGGER.info(message)
 
-    def generate_chart(self, labels, data1, data2, title, yaxis, xaxis, output_file):
+    def generate_chart(self, labels, data1, data2, data3, title, yaxis, xaxis, output_file):
         chart = Charts()
         labels = labels
-        legend1 = "MongDB"
+        datasets = []
+
+        legend1 = "BCDB(redis)"
         color1 = "rgb(0, 0, 255)"
         dataset1 = chart.generate_dataset(legend=legend1, data=data1, color=color1)
+        datasets.append(dataset1)
 
-        legend2 = "BCDB"
+        legend2 = "MongoBD"
         color2 = "rgb(255, 0, 0)"
         dataset2 = chart.generate_dataset(legend=legend2, data=data2, color=color2)
+        datasets.append(dataset2)
 
-        datasets = [dataset1, dataset2]
+        if data3 is not None:
+            legend3 = "Redis"
+            color3 = "rgb(0, 255, 0)"
+            dataset3 = chart.generate_dataset(legend=legend3, data=data3, color=color3)
+            datasets.append(dataset3)
+
         path = os.path.dirname(os.path.abspath(__file__))
         output_path = os.path.join(path, output_file)
         chart.generate_chart(
