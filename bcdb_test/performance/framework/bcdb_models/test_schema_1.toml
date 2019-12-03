@@ -1,0 +1,10 @@
+@url = test.schema.1
+text = "" (S)
+
+@url = test.nested.1
+string_obj = (O) !test.schema.1
+
+@url = test.index.1
+name** = (S)
+text = "" (S)
+
