@@ -9,13 +9,14 @@ from .framework.mongodb import TestMongo
 from .framework.mongo_models.models import *
 from .framework.redis import Redis
 
+DATASIZE = 1024 * 1024 
 
 class PerformanceTest(BaseTest):
     def setUp(self):
         super().setUp()
-        self.bcdb = TestBCDB(type="redis")
+        self.bcdb = TestBCDB(type="redis", data_size=DATASIZE)
         self.bcdb.create_models()
-        self.mongo = TestMongo()
+        self.mongo = TestMongo(data_size=DATASIZE)
         self.mongo.create_models()
 
     def tearDown(self):
@@ -52,7 +53,7 @@ class PerformanceTest(BaseTest):
         speed = []
         for i in processes:
             write_result = self.multi_process(target=func, process_number=i)
-            self.assertGreaterEqual(len(write_result), 0.9 * i, "The objects that should be saved are less than 90%")
+            self.assertGreaterEqual(len(write_result), 0.9 * i, "The objects that has been saved shouldn't be less than 90%")
             speed.append(len(write_result) / sum(write_result))
         return speed
 
@@ -77,7 +78,7 @@ class PerformanceTest(BaseTest):
         #. Generate chart for writing speed for the three DataBases.
         """
         processes = [1, 5, 10, 25, 50]
-
+    
         self.info("Writing in BCDB.")
         bcdb_speed = self.calculate_write_speed(processes=processes, func=self.bcdb.write_string)
 
@@ -85,7 +86,7 @@ class PerformanceTest(BaseTest):
         mongo_speed = self.calculate_write_speed(processes=processes, func=self.mongo.write_string)
 
         self.info("Writing in Redis.")
-        redis = Redis()
+        redis = Redis(data_size=DATASIZE)
         redis_speed = self.calculate_write_speed(processes=processes, func=redis.write_string)
 
         self.info("Generating chart for writing speed for the three DataBases.")
@@ -97,6 +98,7 @@ class PerformanceTest(BaseTest):
         plt.plot(processes, redis_speed, label="Redis")
         plt.legend()
         plt.savefig("write_speed.png")
+        plt.close()
 
     def test002_write_5_mb_string_nested_schema(self):
         """
@@ -123,6 +125,7 @@ class PerformanceTest(BaseTest):
         plt.plot(processes, mongo_speed, label="MongoBD")
         plt.legend()
         plt.savefig("nested_write_speed.png")
+        plt.close()
 
     def test003_write_15_char_indexed_string(self):
         """
@@ -149,6 +152,7 @@ class PerformanceTest(BaseTest):
         plt.plot(processes, mongo_speed, label="MongoBD")
         plt.legend()
         plt.savefig("indexed_write_speed.png")
+        plt.close()
 
     def test004_query(self):
         """
@@ -196,3 +200,4 @@ class PerformanceTest(BaseTest):
         plt.plot(data_sizes, mongo_query_time, label="MongoBD")
         plt.legend()
         plt.savefig("query.png")
+        plt.close()

@@ -8,9 +8,8 @@ from .base import Base
 
 
 class TestBCDB(Base):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        type = kwargs.get("type")
+    def __init__(self, data_size, type=None, **kwargs):
+        super().__init__(data_size, **kwargs)
         self.bcdb = self.create_bcdb(type=type)
 
     def get_model(self, url):
@@ -32,5 +31,5 @@ class TestBCDB(Base):
             bcdb = j.data.bcdb.get("test")
             return bcdb
 
-    def create_obj(self, model):
-        return model.new()
+    def create_obj(self, obj):
+        return obj.new()

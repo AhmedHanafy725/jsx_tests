@@ -2,6 +2,7 @@ from unittest import TestCase
 from uuid import uuid4
 import multiprocessing
 import os
+import time 
 
 from loguru import logger
 from Jumpscale import j
@@ -13,17 +14,21 @@ class BaseTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        j.sal.process.killProcessByName("redis-server")
-        cmd = "redis-server --port 6379"
+        cmd = """pkill redis-server
+        sleep 1
+        redis-server --port 6379"""
         cls.startup = j.servers.startupcmd.get("test_performance", cmd_start=cmd)
         cls.startup.start()
         os.system("service mongodb start")
+        cls.wait_for_servers()
 
-    def wait_for_servers(self):
+    @staticmethod
+    def wait_for_servers():
+        time.sleep(2)
         redis = j.sal.nettools.waitConnectionTest(ipaddr="localhost", port=6379, timeout=5)
         mongo = j.sal.nettools.waitConnectionTest(ipaddr="localhost", port=27017, timeout=5)
         if not redis or not mongo:
-            raise RuntimeError("servers didn't start")
+            raise RuntimeError("Servers didn't start")
 
     @classmethod
     def tearDownClass(cls):

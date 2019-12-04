@@ -4,11 +4,11 @@ from Jumpscale import j
 
 
 class Base:
-    def __init__(self, **kwargs):
+    def __init__(self, data_size, **kwargs):
         self.string_model = None
         self.indexed_model = None
         self.nested_model = None
-        self.data_size = kwargs.get("block_size", 1024 * 1024 * 5)
+        self.data_size = data_size
 
     def write_string(self, write_result):
         text = j.data.idgenerator.generateXCharID(self.data_size)
@@ -32,20 +32,20 @@ class Base:
     def write_indexed_string(self, write_result):
         text = j.data.idgenerator.generateXCharID(self.data_size)
         name = j.data.idgenerator.generateXCharID(15)
-        indexed_model = self.create_obj(self.indexed_model)
-        indexed_model.text = text
-        indexed_model.name = name
+        indexed_obj = self.create_obj(self.indexed_model)
+        indexed_obj.text = text
+        indexed_obj.name = name
 
-        write_time = self.calculate_write_time(indexed_model)
+        write_time = self.calculate_write_time(indexed_obj)
         write_result.append(write_time)
 
     def create_obj(self, model):
         # this method should be overridden in all child classes
-        return
+        pass
 
-    def calculate_write_time(self, model):
+    def calculate_write_time(self, obj):
         write_start = time.time()
-        model.save()
+        obj.save()
         write_end = time.time()
 
         write_time = write_end - write_start
