@@ -8,7 +8,6 @@ from .mongo_models.models import *
 from .base import Base
 
 
-
 class TestMongo(Base):
     def __init__(self, data_size, **kwargs):
         super().__init__(data_size, **kwargs)

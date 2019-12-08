@@ -25,7 +25,15 @@ class TestBCDB(Base):
     def create_bcdb(self, type):
         if type == "redis":
             storclient = j.clients.rdb.client_get(namespace="test_rdb")
-            bcdb = j.data.bcdb.get(name="test", storclient=storclient, reset=False)
+            bcdb = j.data.bcdb.get(name="test_redis", storclient=storclient, reset=False)
+            return bcdb
+        elif type == "zdb":
+            zdb = j.servers.zdb.test_instance_start()
+            time.sleep(2)
+            storclient_admin = zdb.client_admin_get()
+            secret = "1234"
+            storclient = storclient_admin.namespace_new(name="test_zdb", secret=secret)
+            bcdb = j.data.bcdb.get(name="test_zdb", storclient=storclient)
             return bcdb
         else:
             bcdb = j.data.bcdb.get("test")

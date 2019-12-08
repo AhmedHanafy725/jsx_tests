@@ -18,4 +18,6 @@ class Redis:
         write_end = time.time()
 
         write_time = write_end - write_start
-        write_result.append(write_time)
+        # write_result.append(write_time)
+        # return write_time
+        write_result.put(write_time)

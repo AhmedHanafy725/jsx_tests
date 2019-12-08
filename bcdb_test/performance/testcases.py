@@ -2,6 +2,7 @@ import time
 
 from Jumpscale import j
 import matplotlib.pyplot as plt
+from gevent import monkey
 
 from .base_test import BaseTest
 from .framework.bcdb import TestBCDB
@@ -10,12 +11,13 @@ from .framework.mongo_models.models import *
 from .framework.redis import Redis
 
 DATASIZE = 1024 * 1024
+monkey.patch_all(subprocess=False)
 
 
 class PerformanceTest(BaseTest):
     def setUp(self):
         super().setUp()
-        self.bcdb = TestBCDB(type="redis", data_size=DATASIZE)
+        self.bcdb = TestBCDB(type="zdb", data_size=DATASIZE)
         self.bcdb.create_models()
         self.mongo = TestMongo(data_size=DATASIZE)
         self.mongo.create_models()
@@ -60,6 +62,16 @@ class PerformanceTest(BaseTest):
             speed.append(len(write_result) / sum(write_result))
         return speed
 
+    def calculate_write_speed1(self, threads, func):
+        speed = []
+        for i in threads:
+            write_result = self.multi_threads(target=func, threads_number=i)
+            self.assertGreaterEqual(
+                len(write_result), 0.9 * i, "The objects that has been saved shouldn't be less than 90%"
+            )
+            speed.append(len(write_result) / sum(write_result))
+        return speed
+
     def query_speed(self, query_func, name, value):
         time_start = time.time()
         target = query_func(name=name)
@@ -83,25 +95,30 @@ class PerformanceTest(BaseTest):
         processes = [1, 5, 10, 25, 50]
 
         self.info("Writing in BCDB.")
-        bcdb_speed = self.calculate_write_speed(processes=processes, func=self.bcdb.write_string)
+        bcdb_speed = self.calculate_write_speed1(threads=processes, func=self.bcdb.write_string)
 
         self.info("Writing in MongoDB.")
-        mongo_speed = self.calculate_write_speed(processes=processes, func=self.mongo.write_string)
+        mongo_speed = self.calculate_write_speed1(threads=processes, func=self.mongo.write_string)
 
         self.info("Writing in Redis.")
         redis = Redis(data_size=DATASIZE)
-        redis_speed = self.calculate_write_speed(processes=processes, func=redis.write_string)
+        redis_speed = self.calculate_write_speed1(threads=processes, func=redis.write_string)
 
-        self.info("Generating chart for writing speed for the three DataBases.")
-        plt.title("Writing 5 MB of string on DataBase in parallel using multi processes (Higher speed is better)")
-        plt.ylabel("Speed in MB/s")
-        plt.xlabel("Number of processes")
-        plt.plot(processes, bcdb_speed, label="BCDB(redis)")
-        plt.plot(processes, mongo_speed, label="MongoBD")
-        plt.plot(processes, redis_speed, label="Redis")
-        plt.legend()
-        plt.savefig("write_speed.png")
-        plt.close()
+        self.info("Generate chart for writing speed for the three DataBases.")
+        title = "Writing 5 MB of string on DataBase in parallel using multi processes (Higher speed is better)"
+        yaxis = "Speed in MB/s"
+        xaxis = "Number of processes"
+        output_file = "write_speed.html"
+        self.generate_chart(
+            labels=processes,
+            data1=bcdb_speed,
+            data2=mongo_speed,
+            data3=redis_speed,
+            title=title,
+            yaxis=yaxis,
+            xaxis=xaxis,
+            output_file=output_file,
+        )
 
     def test002_write_5_mb_string_nested_schema(self):
         """
@@ -121,16 +138,20 @@ class PerformanceTest(BaseTest):
         mongo_speed = self.calculate_write_speed(processes=processes, func=self.mongo.write_nested)
 
         self.info("Generate chart for writing speed for the both DataBases.")
-        plt.title(
-            "Writing 5 MB of string in nested schema on DataBase in parallel using multi processes (Higher speed is better)"
+        title = "Writing 5 MB of string in nested schema on DataBase in parallel using multi processes (Higher speed is better)"
+        yaxis = "Speed in MB/s"
+        xaxis = "Number of processes"
+        output_file = "nested_write_speed.html"
+        self.generate_chart(
+            labels=processes,
+            data1=bcdb_speed,
+            data2=mongo_speed,
+            data3=None,
+            title=title,
+            yaxis=yaxis,
+            xaxis=xaxis,
+            output_file=output_file,
         )
-        plt.ylabel("Speed in MB/s")
-        plt.xlabel("Number of processes")
-        plt.plot(processes, bcdb_speed, label="BCDB(redis)")
-        plt.plot(processes, mongo_speed, label="MongoBD")
-        plt.legend()
-        plt.savefig("nested_write_speed.png")
-        plt.close()
 
     def test003_write_15_char_indexed_string(self):
         """
@@ -150,16 +171,20 @@ class PerformanceTest(BaseTest):
         mongo_speed = self.calculate_write_speed(processes=processes, func=self.mongo.write_indexed_string)
 
         self.info("Generate chart for writing speed for the both DataBases.")
-        plt.title(
-            "Writing 5 MB of string with 15 indexed character on DataBase in parallel using multi processes (Higher speed is better)"
+        title = "Writing 5 MB of string with 15 indexed character on DataBase in parallel using multi processes (Higher speed is better)"
+        yaxis = "Speed in MB/s"
+        xaxis = "Number of processes"
+        output_file = "indexed_write_speed.html"
+        self.generate_chart(
+            labels=processes,
+            data1=bcdb_speed,
+            data2=mongo_speed,
+            data3=None,
+            title=title,
+            yaxis=yaxis,
+            xaxis=xaxis,
+            output_file=output_file,
         )
-        plt.ylabel("Speed in MB/s")
-        plt.xlabel("Number of processes")
-        plt.plot(processes, bcdb_speed, label="BCDB(redis)")
-        plt.plot(processes, mongo_speed, label="MongoBD")
-        plt.legend()
-        plt.savefig("indexed_write_speed.png")
-        plt.close()
 
     def test004_query(self):
         """
@@ -198,13 +223,17 @@ class PerformanceTest(BaseTest):
         bcdb_query_time = [x * 1000 for x in bcdb_query_time]
         mongo_query_time = [x * 1000 for x in mongo_query_time]
         data_sizes = [100, 200, 500, 1000, 10000]
-        plt.title(
-            "Querying in DataBase with 15 indexed character with changing number of objects (Lower time is better)"
+        title = "Querying in DataBase with 15 indexed character with changing number of objects (Lower time is better)"
+        yaxis = "Time in ms"
+        xaxis = "Number of objects stored"
+        output_file = "query.html"
+        self.generate_chart(
+            labels=data_sizes,
+            data1=bcdb_query_time,
+            data2=mongo_query_time,
+            data3=None,
+            title=title,
+            yaxis=yaxis,
+            xaxis=xaxis,
+            output_file=output_file,
         )
-        plt.ylabel("Time in ms")
-        plt.xlabel("Number of objects stored")
-        plt.plot(data_sizes, bcdb_query_time, label="BCDB(redis)")
-        plt.plot(data_sizes, mongo_query_time, label="MongoBD")
-        plt.legend()
-        plt.savefig("query.png")
-        plt.close()

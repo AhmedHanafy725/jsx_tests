@@ -16,7 +16,9 @@ class Base:
         string_obj.text = text
 
         write_time = self.calculate_write_time(string_obj)
-        write_result.append(write_time)
+        # write_result.append(write_time)
+        # return write_time
+        write_result.put(write_time)
 
     def write_nested(self, write_result):
         text = j.data.idgenerator.generateXCharID(self.data_size)
